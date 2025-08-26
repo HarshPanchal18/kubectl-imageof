@@ -1,4 +1,6 @@
-# Kubectl imageof - Quickly retrieve image(s) of pod(s) instead of grepping out from the description
+# Kubectl imageof
+
+Quickly retrieve image(s) of pod(s) instead of grepping out from the description
 
 ## Usage
 
@@ -50,7 +52,7 @@ Example:
 
 ## Build and Test on Local
 
-### Build exe
+### Build Go bin
 
 > Important: the binary name must be prefixed with kubectl- so that kubectl recognizes it as a plugin.
 
@@ -116,3 +118,45 @@ With verbose:
 ```bash
 kubectl imageof redis -n redis -v
 ```
+
+## Publishing
+
+### Generate bins for supporting architecture
+
+```bash
+GOOS=linux   GOARCH=amd64 go build -o kubectl-imageof-linux-amd64
+GOOS=darwin  GOARCH=amd64 go build -o kubectl-imageof-darwin-amd64
+GOOS=darwin  GOARCH=arm64 go build -o kubectl-imageof-darwin-arm64
+GOOS=windows GOARCH=amd64 go build -o kubectl-imageof-windows-amd64.exe
+```
+
+### Package each binary into .tar.gz (or .zip for Windows)
+
+```bash
+tar -czf kubectl-imageof-linux-amd64.tar.gz kubectl-imageof-linux-amd64
+tar -czf kubectl-imageof-darwin-amd64.tar.gz kubectl-imageof-darwin-amd64
+tar -czf kubectl-imageof-darwin-arm64.tar.gz kubectl-imageof-darwin-arm64
+zip kubectl-imageof-windows-amd64.zip kubectl-imageof-windows-amd64.exe
+```
+
+### Create a GitHub Release (e.g., v0.1.0) and upload these archives as release assets
+
+### Create a manifest
+
+### Generate SHA256 with and apply inside manifest
+
+```bash
+sha256sum kubectl-imageof-*.tar.gz
+sha256sum kubectl-imageof-*.zip
+```
+
+### Test locally with krew
+
+Before publishing, test your manifest with your local krew:
+
+```bash
+kubectl krew install --manifest=imageof.yaml --archive=kubectl-imageof-linux-amd64.tar.gz
+kubectl imageof -n default -A
+```
+
+If it works, you’re ready to publish.
