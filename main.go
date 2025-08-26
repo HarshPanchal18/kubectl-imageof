@@ -2,11 +2,11 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -46,7 +46,7 @@ func printAllPodImages(client *kubernetes.Clientset, namespace string) error {
         return nil
     }
     for _, pod := range pods.Items {
-        fmt.Printf("Images for pod %s:\n", pod.Name)
+        fmt.Printf("Image(s) for pod %s:\n", pod.Name)
         for _, c := range pod.Spec.Containers {
             fmt.Printf("  %s: %s\n", c.Name, c.Image)
         }
@@ -58,11 +58,14 @@ func main() {
 	var namespace string
 	var allPods bool
 
-	flag.StringVar(&namespace, "n", "default", "Namespace")
-	flag.StringVar(&namespace, "namespace", "default", "Namespace (required)")
-    flag.BoolVar(&allPods, "A", false, "If set, list images of all pods in the namespace")
-    flag.BoolVar(&allPods, "all", false, "If set, list images of all pods in the namespace")
-	flag.Parse()
+	pflag.StringVarP(&namespace, "namespace", "n", "default", "Namespace")
+    pflag.BoolVarP(&allPods, "all", "A", false, "If set, list images of all pods in the namespace")
+	pflag.Parse()
+
+	if namespace == "" {
+        fmt.Fprintln(os.Stderr, "Error: -n NAMESPACE is required")
+        os.Exit(1)
+    }
 
 	client, err := getClientset()
 	if err != nil {
@@ -70,7 +73,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	args := flag.Args()
+	args := pflag.Args()
 
 	if allPods {
 		// Print images for all pods in the namespace
