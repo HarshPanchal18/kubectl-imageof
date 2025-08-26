@@ -25,11 +25,9 @@ func getClientset() (*kubernetes.Clientset, error) {
 // printPodImages - prints images for a single pod in the given namespace
 func printPodImages(client *kubernetes.Clientset, namespace, podName string, verbose bool) error {
     pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
 
-	if verbose { fmt.Printf("Image(s) for pod %s:\n  ", pod.Name) }
+	if verbose { fmt.Printf("Pod %s:\n  ", pod.Name) }
 
 	for _, c := range pod.Spec.Containers {
         fmt.Printf("%s: %s\n", c.Name, c.Image)
@@ -38,7 +36,7 @@ func printPodImages(client *kubernetes.Clientset, namespace, podName string, ver
 }
 
 // printAllPodImages - prints images for all pods in the given namespace
-func printAllPodImages(client *kubernetes.Clientset, namespace string, verbose bool) error {
+func printAllPodImages(client *kubernetes.Clientset, namespace string, treeview bool) error {
     pods, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
     if err != nil { return err }
 
@@ -49,10 +47,14 @@ func printAllPodImages(client *kubernetes.Clientset, namespace string, verbose b
     }
 
 	for _, pod := range pods.Items {
-		if verbose { fmt.Printf("Image(s) for pod %s:\n  ", pod.Name) }
+		fmt.Printf("Pod: %s\n", pod.Name)
 
-		for _, c := range pod.Spec.Containers {
-            fmt.Printf("%s: %s\n", c.Name, c.Image)
+		for _, container := range pod.Spec.Containers {
+			if treeview {
+				fmt.Printf("└──%s: %s\n", container.Name, container.Image)
+			} else {
+				fmt.Printf("  %s: %s\n", container.Name, container.Image)
+			}
         }
     }
     return nil
@@ -62,10 +64,12 @@ func main() {
 	var namespace string
 	var allPods bool
 	var verbose bool
+	var tree bool
 
-	pflag.StringVarP(&namespace, "namespace", "n", "default", "Namespace")
+	pflag.StringVarP(&namespace, "namespace", "n", "default", "Namespace of the pod(s)")
     pflag.BoolVarP(&allPods, "all", "A", false, "If set, list images of all pods in the namespace")
     pflag.BoolVarP(&verbose, "verbose", "v", false, "If set, show pod name in output")
+    pflag.BoolVarP(&tree, "tree", "t", false, "If set, show tree view for multiple pods")
 	pflag.Parse()
 
 	if namespace == "" {
@@ -81,14 +85,12 @@ func main() {
 
 	args := pflag.Args()
 
-	if allPods {
-		// Print images for all pods in the namespace
-		if err := printAllPodImages(client, namespace, verbose); err != nil {
+	if allPods { // Print images for all pods in the namespace
+		if err := printAllPodImages(client, namespace, tree); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
-	} else if len(args) == 1 {
-		// Print images for a single pod
+	} else if len(args) == 1 { // Print images for a single pod
 		pod := args[0]
 		if err := printPodImages(client, namespace, pod, verbose); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -96,9 +98,38 @@ func main() {
 		}
 	} else {
 		fmt.Fprintln(os.Stderr,
-			"Usage:\n",
-			"  kubectl imageof POD_NAME -n NAMESPACE\n",
-			"  kubectl imageof -A -n NAMESPACE")
-		os.Exit(1)
+			`Usage:
+	kubectl imageof POD_NAME -n NAMESPACE
+	kubectl imageof -A -n NAMESPACE
+	Output format: CONTAINER: IMAGE
+
+	E.x.
+	$ kubectl imageof redis -n redis
+	redis: redis
+
+	$ kubectl imageof redis -n redis -v
+	Pod redis:
+		redis: redis
+
+	$ kubectl imageof -A -n harbor
+	Pod: harbor-core-75dd796d56-8gpld
+		core: goharbor/harbor-core:v2.13.2
+	Pod: harbor-database-0
+		database: goharbor/harbor-db:v2.13.2
+	Pod: harbor-jobservice-67f4b8bf4f-bzmxs
+		jobservice: goharbor/harbor-jobservice:v2.13.2
+	Pod: harbor-nginx-5d755775d9-crx62
+		nginx: goharbor/nginx-photon:v2.13.2
+	Pod: harbor-portal-856bfddd77-qnbkm
+		portal: goharbor/harbor-portal:v2.13.2
+	Pod: harbor-redis-0
+		redis: goharbor/redis-photon:v2.13.2
+	Pod: harbor-registry-565b4b6c6c-wx9vn
+		registry: goharbor/registry-photon:v2.13.2
+		registryctl: goharbor/harbor-registryctl:v2.13.2
+	Pod: harbor-trivy-0
+		trivy: goharbor/trivy-adapter-photon:v2.13.2`)
+
+		return
 	}
 }
