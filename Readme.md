@@ -133,10 +133,10 @@ GOOS=windows GOARCH=amd64 go build -o kubectl-imageof-windows-amd64.exe
 ### Package each binary into .tar.gz (or .zip for Windows)
 
 ```bash
-tar -czf kubectl-imageof-linux-amd64.tar.gz kubectl-imageof-linux-amd64
-tar -czf kubectl-imageof-darwin-amd64.tar.gz kubectl-imageof-darwin-amd64
-tar -czf kubectl-imageof-darwin-arm64.tar.gz kubectl-imageof-darwin-arm64
-zip kubectl-imageof-windows-amd64.zip kubectl-imageof-windows-amd64.exe
+tar -czf kubectl-imageof-linux-amd64.tar.gz kubectl-imageof-linux-amd64 LICENSE
+tar -czf kubectl-imageof-darwin-amd64.tar.gz kubectl-imageof-darwin-amd64 LICENSE
+tar -czf kubectl-imageof-darwin-arm64.tar.gz kubectl-imageof-darwin-arm64 LICENSE
+zip kubectl-imageof-windows-amd64.zip kubectl-imageof-windows-amd64.exe LICENSE
 ```
 
 ### Create a GitHub Release (e.g., v0.1.0) and upload these archives as release assets
