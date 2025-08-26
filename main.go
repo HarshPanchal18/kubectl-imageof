@@ -60,17 +60,72 @@ func printAllPodImages(client *kubernetes.Clientset, namespace string, treeview 
     return nil
 }
 
+func printUsage() {
+	fmt.Fprintln(os.Stderr,
+			`
+Usage:
+	Quickly retrieve image(s) of pod(s) instead of grepping out from the description.
+
+Syntax:
+	kubectl imageof POD_NAME -n NAMESPACE
+	kubectl imageof -A -n NAMESPACE
+
+Output:
+	CONTAINER: IMAGE
+
+Options:
+	-A, --all                List images of all pods in the namespace
+	-h, --help               Print plugin usage
+	-n, --namespace string   Namespace of the pod(s) (default "default")
+	-t, --tree               Show tree view for multiple pods
+	-v, --verbose            Show pod name in output
+
+Example:
+	$ kubectl imageof redis -n redis
+	redis: redis
+
+	$ kubectl imageof redis -n redis -v
+	Pod redis:
+		redis: redis
+
+	$ kubectl imageof -A -n harbor
+	Pod: harbor-core-75dd796d56-8gpld
+		core: goharbor/harbor-core:v2.13.2
+	Pod: harbor-database-0
+		database: goharbor/harbor-db:v2.13.2
+	Pod: harbor-jobservice-67f4b8bf4f-bzmxs
+		jobservice: goharbor/harbor-jobservice:v2.13.2
+	Pod: harbor-nginx-5d755775d9-crx62
+		nginx: goharbor/nginx-photon:v2.13.2
+	Pod: harbor-portal-856bfddd77-qnbkm
+		portal: goharbor/harbor-portal:v2.13.2
+	Pod: harbor-redis-0
+		redis: goharbor/redis-photon:v2.13.2
+	Pod: harbor-registry-565b4b6c6c-wx9vn
+		registry: goharbor/registry-photon:v2.13.2
+		registryctl: goharbor/harbor-registryctl:v2.13.2
+	Pod: harbor-trivy-0
+		trivy: goharbor/trivy-adapter-photon:v2.13.2`)
+}
+
 func main() {
+	var help bool
 	var namespace string
 	var allPods bool
 	var verbose bool
 	var tree bool
 
+    pflag.BoolVarP(&help, "help", "h", false, "Print plugin usage")
 	pflag.StringVarP(&namespace, "namespace", "n", "default", "Namespace of the pod(s)")
-    pflag.BoolVarP(&allPods, "all", "A", false, "If set, list images of all pods in the namespace")
-    pflag.BoolVarP(&verbose, "verbose", "v", false, "If set, show pod name in output")
-    pflag.BoolVarP(&tree, "tree", "t", false, "If set, show tree view for multiple pods")
+    pflag.BoolVarP(&allPods, "all", "A", false, "List images of all pods in the namespace")
+    pflag.BoolVarP(&verbose, "verbose", "v", false, "Show pod name in output")
+    pflag.BoolVarP(&tree, "tree", "t", false, "Show tree view for multiple pods")
 	pflag.Parse()
+
+	if help {
+		printUsage()
+		return
+	}
 
 	if namespace == "" {
         fmt.Fprintln(os.Stderr, "Error: -n NAMESPACE is required")
@@ -97,39 +152,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Fprintln(os.Stderr,
-			`Usage:
-	kubectl imageof POD_NAME -n NAMESPACE
-	kubectl imageof -A -n NAMESPACE
-	Output format: CONTAINER: IMAGE
-
-	E.x.
-	$ kubectl imageof redis -n redis
-	redis: redis
-
-	$ kubectl imageof redis -n redis -v
-	Pod redis:
-		redis: redis
-
-	$ kubectl imageof -A -n harbor
-	Pod: harbor-core-75dd796d56-8gpld
-		core: goharbor/harbor-core:v2.13.2
-	Pod: harbor-database-0
-		database: goharbor/harbor-db:v2.13.2
-	Pod: harbor-jobservice-67f4b8bf4f-bzmxs
-		jobservice: goharbor/harbor-jobservice:v2.13.2
-	Pod: harbor-nginx-5d755775d9-crx62
-		nginx: goharbor/nginx-photon:v2.13.2
-	Pod: harbor-portal-856bfddd77-qnbkm
-		portal: goharbor/harbor-portal:v2.13.2
-	Pod: harbor-redis-0
-		redis: goharbor/redis-photon:v2.13.2
-	Pod: harbor-registry-565b4b6c6c-wx9vn
-		registry: goharbor/registry-photon:v2.13.2
-		registryctl: goharbor/harbor-registryctl:v2.13.2
-	Pod: harbor-trivy-0
-		trivy: goharbor/trivy-adapter-photon:v2.13.2`)
-
+		printUsage()
 		return
 	}
 }
