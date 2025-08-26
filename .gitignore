@@ -11,6 +11,8 @@
 *.dll
 *.so
 *.dylib
+*-amd64
+*-arm64
 
 # Test binary, built with `go test -c`
 *.test
@@ -23,5 +25,11 @@
 
 # Go workspace file
 go.work
+
+# Archives
+*.tar.gz
+*.zip
+
+TODO
 
 # End of https://www.toptal.com/developers/gitignore/api/go
