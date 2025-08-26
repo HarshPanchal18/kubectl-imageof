@@ -23,32 +23,36 @@ func getClientset() (*kubernetes.Clientset, error) {
 }
 
 // printPodImages - prints images for a single pod in the given namespace
-func printPodImages(client *kubernetes.Clientset, namespace, podName string) error {
+func printPodImages(client *kubernetes.Clientset, namespace, podName string, verbose bool) error {
     pod, err := client.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
     if err != nil {
         return err
     }
-    fmt.Printf("Image(s) for pod %s in namespace %s:\n", pod.Name, namespace)
-    for _, c := range pod.Spec.Containers {
-        fmt.Printf("  %s: %s\n", c.Name, c.Image)
+
+	if verbose { fmt.Printf("Image(s) for pod %s:\n  ", pod.Name) }
+
+	for _, c := range pod.Spec.Containers {
+        fmt.Printf("%s: %s\n", c.Name, c.Image)
     }
     return nil
 }
 
 // printAllPodImages - prints images for all pods in the given namespace
-func printAllPodImages(client *kubernetes.Clientset, namespace string) error {
+func printAllPodImages(client *kubernetes.Clientset, namespace string, verbose bool) error {
     pods, err := client.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-    if err != nil {
-        return err
-    }
+    if err != nil { return err }
+
+	// No pods
     if len(pods.Items) == 0 {
         fmt.Printf("No pods found in namespace %s\n", namespace)
         return nil
     }
-    for _, pod := range pods.Items {
-        fmt.Printf("Image(s) for pod %s:\n", pod.Name)
-        for _, c := range pod.Spec.Containers {
-            fmt.Printf("  %s: %s\n", c.Name, c.Image)
+
+	for _, pod := range pods.Items {
+		if verbose { fmt.Printf("Image(s) for pod %s:\n  ", pod.Name) }
+
+		for _, c := range pod.Spec.Containers {
+            fmt.Printf("%s: %s\n", c.Name, c.Image)
         }
     }
     return nil
@@ -57,9 +61,11 @@ func printAllPodImages(client *kubernetes.Clientset, namespace string) error {
 func main() {
 	var namespace string
 	var allPods bool
+	var verbose bool
 
 	pflag.StringVarP(&namespace, "namespace", "n", "default", "Namespace")
     pflag.BoolVarP(&allPods, "all", "A", false, "If set, list images of all pods in the namespace")
+    pflag.BoolVarP(&verbose, "verbose", "v", false, "If set, show pod name in output")
 	pflag.Parse()
 
 	if namespace == "" {
@@ -77,13 +83,14 @@ func main() {
 
 	if allPods {
 		// Print images for all pods in the namespace
-		if err := printAllPodImages(client, namespace); err != nil {
+		if err := printAllPodImages(client, namespace, verbose); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
 	} else if len(args) == 1 {
 		// Print images for a single pod
-		if err := printPodImages(client, namespace, args[0]); err != nil {
+		pod := args[0]
+		if err := printPodImages(client, namespace, pod, verbose); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
