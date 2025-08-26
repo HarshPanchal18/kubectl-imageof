@@ -160,3 +160,21 @@ kubectl imageof -n default -A
 ```
 
 If it works, you’re ready to publish.
+
+### Submit to krew-index
+
+1. Fork the official repo: <https://github.com/kubernetes-sigs/krew-index>
+2. Add your manifest under plugins/imageof.yaml
+3. Commit & create a PR to krew-index
+
+Krew maintainers will review your manifest. Once merged, users can install with:
+
+```bash
+kubectl krew install imageof
+```
+
+And then simply use:
+
+```bash
+kubectl imageof -n default -A
+```
