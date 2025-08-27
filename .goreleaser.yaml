@@ -1,0 +1,31 @@
+project_name: kubectl-imageof
+
+builds:
+  - binary: kubectl-imageof
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+
+archives:
+  - format_overrides:
+      - goos: windows
+        format: zip
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+    files:
+      - LICENSE
+      - Readme.md
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: HarshPanchal18
+    name: kubectl-imageof
+  prerelease: auto
